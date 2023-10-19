@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 
 import argparse
-import censys.search
-import jsonpatch
 import json
 from datetime import date, timedelta
+
+import censys.search
 import git
+import jsonpatch
+
 
 class CensysEntry:
     def __init__(self, host, at_time, censys_ctx) -> None:
@@ -15,7 +17,8 @@ class CensysEntry:
         self.censys_ctx = censys_ctx
         self.data = self.censys_ctx.view(self.host, at_time=self.at_time)
         self.diff = self.censys_ctx.view_host_diff(
-            self.host, at_time=self.at_time, at_time_b=self.to_time)
+            self.host, at_time=self.at_time, at_time_b=self.to_time
+        )
         self.patches = self.diff["patch"]
 
     def apply_patch(self):
@@ -23,8 +26,7 @@ class CensysEntry:
 
 
 class CensysManager:
-    def __init__(self, host, start_date, end_date, repo='./'):
-
+    def __init__(self, host, start_date, end_date, repo="./"):
         self.host = host
         self.start_date = start_date
         self.end_date = end_date
@@ -57,6 +59,7 @@ class CensysManager:
                     return True
 
         return False
+
     def save_to_repo(self, use_branch=""):
         repository = None
         repository = git.Repo(self.repo)
@@ -68,16 +71,16 @@ class CensysManager:
         first_data = self.entries[0].data
         filename = f"{self.repo}/{self.host}"
 
-        with open(filename, 'w+', newline='\n') as f:
+        with open(filename, "w+", newline="\n") as f:
             f.write(json.dumps(first_data, indent=2))
-            repository.index.add([f'{self.host}'])
+            repository.index.add([f"{self.host}"])
             repository.index.commit(f"Update {self.host}")
 
         is_dangling = False
         for entry in self.entries:
             for patch in entry.patches:
                 first_data = jsonpatch.apply_patch(first_data, [patch])
-                with open(filename, 'w', newline='\n') as f:
+                with open(filename, "w", newline="\n") as f:
                     f.write(json.dumps(first_data, indent=2))
                     f.flush()
 
@@ -86,18 +89,25 @@ class CensysManager:
                     continue
 
                 is_dangling = False
-                repository.git.commit('--date', entry.at_time, '-a',
-                                      '-m', f'{patch["op"]} {patch["path"]}')
+                repository.git.commit(
+                    "--date",
+                    entry.at_time,
+                    "-a",
+                    "-m",
+                    f'{patch["op"]} {patch["path"]}',
+                )
         if is_dangling:
             # this is a dumb way to handle this.
-            repository.git.commit('-a', '-m', 'final')
+            repository.git.commit("-a", "-m", "final")
+
 
 def _is_censys_repo(repo):
     try:
-        with open(f"{repo}/.censys", 'r') as f:
+        with open(f"{repo}/.censys"):
             return True
     except FileNotFoundError:
         return False
+
 
 def _needs_init(repo):
     try:
@@ -106,16 +116,17 @@ def _needs_init(repo):
     except git.exc.InvalidGitRepositoryError:
         return True
 
+
 def main(args):
     if args.host == "init" and _needs_init(args.repo):
         print("Initializing new Censys host import repository.")
 
-        with open(f"{args.repo}/.censys", 'w+') as f:
+        with open(f"{args.repo}/.censys", "w+") as f:
             f.write("This is a Censys host import repository.")
 
         repo = git.Repo.init(args.repo)
         repo.index.add([".censys"])
-        repo.git.commit('-a', '-m', 'Initial commit')
+        repo.git.commit("-a", "-m", "Initial commit")
         print("Initialized new Censys host import repository.")
         exit(0)
 
@@ -132,13 +143,26 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Process Censys data and save to git repo.')
-    parser.add_argument('host', help='Host IP to process')
-    parser.add_argument('-f', '--from-date', type=lambda s: date.fromisoformat(s), help='Start date in the format YYYY-MM-DD')
-    parser.add_argument('-t', '--to-date', type=lambda s: date.fromisoformat(s), help='End date in the format YYYY-MM-DD')
-    parser.add_argument('-r', '--repo', default='.', help='Path to git repo')
-    parser.add_argument('-b', '--branch', default="", help="Create a new branch and import the host.")
+    parser = argparse.ArgumentParser(
+        description="Process Censys data and save to git repo."
+    )
+    parser.add_argument("host", help="Host IP to process")
+    parser.add_argument(
+        "-f",
+        "--from-date",
+        type=lambda s: date.fromisoformat(s),
+        help="Start date in the format YYYY-MM-DD",
+    )
+    parser.add_argument(
+        "-t",
+        "--to-date",
+        type=lambda s: date.fromisoformat(s),
+        help="End date in the format YYYY-MM-DD",
+    )
+    parser.add_argument("-r", "--repo", default=".", help="Path to git repo")
+    parser.add_argument(
+        "-b", "--branch", default="", help="Create a new branch and import the host."
+    )
     args = parser.parse_args()
 
     main(args)
-
