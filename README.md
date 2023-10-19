@@ -5,19 +5,19 @@ allowing for analysts to quickly review the history of a host in a git-intuitive
 
 This script attempts to preserve the timestamp of the host change into the commit log, and logs every major action as the commit message.
 
-### Install
+## Install
 
 1. `pip install -r requirements.txt`
 2. Copy `git-import-host.py` to `$PATH/git-import-host` and `chmod +x` to make it executable.
 
-### Run
+## Run
 
 1. `mkdir host_history/ && cd host_history/`
-2. Initialize the repository: `git import-host --init`
+2. Initialize the repository: `git import-host init`
 3. Import the host `1.1.1.1`'s history between 2023-10-01 and 2023-10-03: `git import-host -f 2023-10-01 -t 2023-10-03 1.1.1.1`
 4. Profit?
 
-```
+```sh
 lz@localhost:~/host_history$ git import-host -f 2023-10-01 -t 2023-10-03 1.1.1.1 
 lz@localhost:~/host_history$ git log --reverse -5 -p 1.1.1.1
 commit 9266a5875da425df0f17b1eb91b9d8d3ba51af3d
